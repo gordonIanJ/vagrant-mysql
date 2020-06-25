@@ -1,0 +1,90 @@
+---
+  - name: Ensure ldap server is running
+    service:
+      name: slapd
+      state: started
+    become: true
+
+  - name: Hash new OLC Root PW
+    shell: /usr/sbin/slappasswd -h {"{{ slapd_hashing_algo }}"} -s {{ slapd_root_pw }}
+    register: slapd_root_pw_hash
+    changed_when: false
+
+  - name: Test if OLC Root User already setup (fail is normal)
+    shell: ldapwhoami -x -w "{{ slapd_root_pw }}" -D {{ slapd_root_dn }}
+    register: slapd_whoami
+    changed_when: false
+    ignore_errors: yes
+
+  - name: Setup OLC Root User
+    ldap_attr:
+        dn: olcDatabase={0}config,cn=config
+        name: "{{ item.key }}"
+        values: "{{ item.value }}"
+        state: exact
+    with_dict:
+      olcRootPW: "{{ slapd_root_pw_hash.stdout }}"
+      olcRootDN: "{{ slapd_root_dn }}"
+    become: true
+    when: slapd_root_dn not in slapd_whoami.stdout
+
+  - block:
+    - name: Set CA Cert to self signed
+      set_fact:
+        slapd_ssl_cert_ca_path: "{{ slapd_ssl_cert_path }}"
+
+    - name: Check if Certificate exists
+      stat:
+        path: "{{ slapd_ssl_cert_path }}"
+      register: cert_state
+
+    - name: Generate Self Signed Certificate
+      shell: openssl req -x509 -nodes -newkey rsa:{{ slapd_ssl_cert_key_length }} -keyout {{ slapd_ssl_cert_key_path }} -out {{ slapd_ssl_cert_path }} -days {{ slapd_ssl_cert_duration }} -subj '/C={{ slapd_ssl_cert_country }}/ST={{ slapd_ssl_cert_state }}/L={{ slapd_ssl_cert_location}}/O={{ slapd_ssl_cert_organization }}/CN={{ slapd_ssl_cert_common_name }}'
+      become: true
+      when: not cert_state.stat.exists or slapd_ssl_self_signed_renew
+
+    - name: Set permissions at private key file
+      file:
+        path: "{{ slapd_ssl_cert_key_path }}"
+        owner: "{{ slapd_server_user }}"
+        group: "{{ slapd_server_group }}"
+        mode: 0600
+      become: true
+
+    when: slapd_ssl_self_signed and slapd_ssl
+
+  - block:
+    - name: Enable ldaps
+      set_fact:
+        slapd_protocols: "{{ slapd_protocols + ' ldaps:///'}}"
+
+    - name: Update protocols
+      lineinfile:
+        path: "{{ slapd_defaults_path }}"
+        regexp: "{{ slapd_protocols_line_regex}}"
+        line: '{{ slapd_protocols_line }}="{{ slapd_protocols }}"'
+      notify: restart slapd
+      become: true
+
+## https://www.golinuxcloud.com/configure-openldap-with-tls-certificates/
+#    - name: Check if ssl is already configured (fail is normal)
+#      shell: grep "{{ slapd_ssl_cert_path }}" "{{ slapd_config_path }}cn\=config.ldif" && grep "{{ slapd_ssl_cert_key_path }}" "{{ slapd_config_path }}cn\=config.ldif" && grep "{{ slapd_ssl_cert_ca_path }}" "{{ slapd_config_path }}cn\=config.ldif"
+#      register: check_ssl
+#      become: true
+#      changed_when: false
+#      ignore_errors: true
+#
+#    - name: Create ldif file
+#      template:
+#        src: files/ssl_enable.ldif.y2
+#        dest: "{{ slapd_tmp_dir}}/ssl_enable.ldif"
+#        owner: root
+#        group: root
+#      become: true
+#      when: check_ssl.rc == 1
+#
+#    - name: Execute ldif file
+#      shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f "{{ slapd_tmp_dir}}"/ssl_enable.ldif
+#      become: true
+#      when: check_ssl.rc == 1
+#    when: slapd_ssl

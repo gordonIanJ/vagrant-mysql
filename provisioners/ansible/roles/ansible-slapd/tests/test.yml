@@ -1,0 +1,20 @@
+---
+- hosts: all
+  remote_user: root
+  tasks:
+    - apt:
+        update_cache: yes
+      when: "ansible_pkg_mgr == 'apt'"
+      changed_when: false
+
+    - package:
+        name: "{{ item }}"
+        state: present
+      become: true
+      with_items:
+        - lsof
+
+- hosts: all
+  remote_user: root
+  roles:
+    - role_under_test

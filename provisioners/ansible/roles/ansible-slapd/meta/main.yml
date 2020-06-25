@@ -1,0 +1,23 @@
+galaxy_info:
+  author: Phill93
+  description: Ansible Role to install and configurate the openldap server
+
+  license: GPLv3
+
+  min_ansible_version: 2.0
+
+  platforms:
+  - name: EL
+    versions:
+      - 7
+  - name: Ubuntu
+    versions:
+    - xenial
+  - name: Debian
+    versions:
+    - wheezy
+
+  galaxy_tags:
+    - openldap
+    - ldap
+    - slapd

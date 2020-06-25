@@ -1,0 +1,21 @@
+---
+slapd_server_pkgs:
+  - slapd
+
+slapd_utils_pkgs:
+  - ldap-utils
+  - python-ldap
+
+slapd_ssl_utils_pkgs:
+  - openssl
+
+slapd_server_user: "openldap"
+slapd_server_group: "openldap"
+slapd_config_path: "/etc/ldap/slapd.d/"
+
+slapd_tmp_dir: "/tmp/slapd"
+
+slapd_defaults_path: "/etc/default/slapd"
+
+slapd_protocols_line_regex: "^SLAPD_SERVICES=.*$"
+slapd_protocols_line: "SLAPD_SERVICES"

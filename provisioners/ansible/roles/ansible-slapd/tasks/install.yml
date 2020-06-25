@@ -1,0 +1,27 @@
+---
+  - name: Install slapd Server
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ slapd_server_pkgs }}"
+    become: true
+
+  - name: Install LDAP Utils
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ slapd_utils_pkgs }}"
+    become: true
+
+  - name: Install SSL Utils
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ slapd_ssl_utils_pkgs }}"
+    become: true
+
+  - name: Start ldap deamon
+    service:
+      name: slapd
+      state: started
+    become: true

@@ -1,0 +1,12 @@
+# basha.ldif
+
+dn: uid=basha,ou=People,dc=support,dc=local
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+cn: accounting
+uid: basha
+uidNumber: 9999
+gidNumber: 100
+homeDirectory: /home/basha
+loginShell: /bin/bash

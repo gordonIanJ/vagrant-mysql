@@ -1,0 +1,25 @@
+---
+# tasks file for slapd
+  - name: Load OS specific variables
+    include_vars: "{{ ansible_os_family }}.yml"
+
+  - name: Create TMP Dir
+    file:
+      path: "{{ slapd_tmp_dir }}"
+      state: directory
+      mode: 0700
+      owner: root
+      group: root
+    become: true
+    changed_when: false
+
+  - include: install.yml
+
+  - include: configure.yml
+
+  - name: Remove TMP Dir
+    file:
+      path: "{{ slapd_tmp_dir }}"
+      state: absent
+    become: true
+    changed_when: false

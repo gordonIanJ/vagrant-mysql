@@ -1,0 +1,11 @@
+# base.ldif
+
+dn: dc=support,dc=local
+objectClass: dcObject
+objectClass: organization
+o: support.local
+dc: support
+
+dn: ou=People,dc=support,dc=local
+objectClass: organizationalUnit
+ou: People
